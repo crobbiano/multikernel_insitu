@@ -13,10 +13,11 @@ for runNum = 1:1
     baseNetworkFile = './irNetwork_base.mat';
     isNetworkFile = './irNetwork_is.mat';
 %     allDataPath = '../gen_scripts/trex_insitu_2class_test_insitu.mat';
-    allDataPath = '../gen_scripts/trex_test.mat';
+    allDataPath = '../gen_scripts/trex_small_test.mat';
+%     allDataPath = '../gen_scripts/trex_small_big_gen_test.mat';
     
-    ResidNorm = .25;
-    SS_THRESH = 30;
+    ResidNorm = .1;
+    SS_THRESH = 200;
     CLASS_THRESH = 0.25;
     
     %% Load data
@@ -53,7 +54,7 @@ for runNum = 1:1
     if saveIS
         save(isNetworkFile, 'isNetwork');
     end
-    save(['results/results_batch' num2str(results.batchSize) '_run' num2str(runNum) 'FAKE.mat'], 'results');
+    save(['results/results_batch' num2str(results.batchSize) '_run' num2str(runNum) 'multi.mat'], 'results', '-v7.3');
 end
 
 

@@ -32,12 +32,12 @@ bunkFRM = (classes_FRM == 1) | (classes_FRM == 8);
 classes_FRM(bunkFRM) = [];
 Y_FRM(:,bunkFRM) = [];
 
-% get rid of low power things
-keep_idx = vecnorm(Y_TREX,2,1) >= 1e-5;
+% get rid of low power observations
+keep_idx = vecnorm(Y_TREX,2,1) >= 1e-4;
 Y_TREX = Y_TREX(:,keep_idx);
 classes_TREX = classes_TREX(keep_idx);
 
-two_class = 1;
+two_class = 0;
 if two_class
     nonuxo_TREX = (classes_TREX == 2) | (classes_TREX == 3);
     uxo_TREX = (classes_TREX == 4) | (classes_TREX == 5) | (classes_TREX == 6) | (classes_TREX == 7) | (classes_TREX == 9) | (classes_TREX == 10);
@@ -95,10 +95,26 @@ if hackkkk
 end
 
 
-shift_classes = 0;
-if shift_classes
+shift_classes_pos = 0;
+if shift_classes_pos
     classes_FRM = classes_FRM + 1;
     classes_TREX = classes_TREX + 1;
+end
+
+shift_classes_neg = 0;
+if shift_classes_neg
+    classes_FRM = classes_FRM - 1;
+    classes_TREX = classes_TREX - 1;
+end
+
+reorder_class_labels = 1;
+if reorder_class_labels
+    all_classes = unique(classes_FRM);
+    new_classes = 0:length(all_classes)-1;
+    for i = 1:length(all_classes)
+        classes_FRM(classes_FRM == all_classes(i)) = new_classes(i);
+        classes_TREX(classes_TREX == all_classes(i)) = new_classes(i);
+    end
 end
 
 classes_train = classes_FRM;
@@ -109,11 +125,11 @@ Data_test = Y_TREX;
 do_kmeans = 1;
 if do_kmeans
     num_clusters = 600;
-    Data_train_0 = Data_train(:,(classes_FRM == 0 + shift_classes));
-    Data_train_1 = Data_train(:,(classes_FRM == 1 + shift_classes));
+    Data_train_0 = Data_train(:,(classes_FRM == 0 + shift_classes_pos));
+    Data_train_1 = Data_train(:,(classes_FRM == 1 + shift_classes_pos));
     [cidx_1,cmeans_1] = kmeans(Data_train_1',num_clusters,'dist','sqeuclidean');
     [cidx_0,cmeans_0] = kmeans(Data_train_0',num_clusters,'dist','sqeuclidean');
-    classes_train = [(0 + shift_classes)*ones(1, size(cmeans_0,1)), (1 + shift_classes)*ones(1, size(cmeans_1,1))];
+    classes_train = [(0 + shift_classes_pos)*ones(1, size(cmeans_0,1)), (1 + shift_classes_pos)*ones(1, size(cmeans_1,1))];
     Data_train = [cmeans_0; cmeans_1]';
 end
 
@@ -128,8 +144,8 @@ nClasses = length(classes);
 for ii = 1:nClasses
     num_per_class_train(ii) = sum(allClass == classes(ii));
 end
-nSamples = round(min(num_per_class_train)/1);
-% nSamples = 100;
+% nSamples = round(min(num_per_class_train)/1);
+nSamples = 200;
 
 subsample = 0;
 if subsample
@@ -169,9 +185,9 @@ for ii = 1:nClasses
 end
 
 nClasses = length(classes);
-% nSamples = 1000;
 nSamples = round(min(num_per_class_test)/1);
-test_subsample = 1;
+% nSamples = 1000;
+test_subsample = 0;
 clear indDict
 if test_subsample
     for ii = 1:nClasses
@@ -199,12 +215,12 @@ indTrain=logical(sum(ind==1:2,2));
 indTrainSmall=logical(sum(ind==1:2,2));
 % indTrainSmall=indTrain;
 
-indTest=logical(sum(ind==1:20,2));
-indTestSmall=logical(sum(ind==1:20,2));
+indTest=logical(sum(ind==1:5,2));
+indTestSmall=logical(sum(ind==1:5,2));
 % indTestSmall=indTest;
 
-indValid=logical(sum(ind==50:100,2));
-indValidSmall=logical(sum(ind==50:100,2));
+indValid=logical(sum(ind==11:100,2));
+indValidSmall=logical(sum(ind==11:100,2));
 % indValidSmall=indValid;
 
 trainClass = allClass(indTrain);
@@ -231,7 +247,7 @@ if hackit
 end
 
 %%
-save('trex_test.mat', 'dictClass', 'dictClassSmall', 'dictSet', ...
+save('trex_small_big_gen_test.mat', 'dictClass', 'dictClassSmall', 'dictSet', ...
     'dictSetSmall', 'trainSet', 'trainClass', 'testSet', 'testClass',...
     'trainSetSmall', 'trainClassSmall', 'testSetSmall', 'testClassSmall',...
     'validSet', 'validClass', 'validSetSmall', 'validClassSmall')
