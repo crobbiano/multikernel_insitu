@@ -5,9 +5,22 @@ clc
 clearvars -except runNum
 addpath(genpath('srv1_9'));
 addpath('lowlevel_functions')
-load('../gen_scripts/trex_insitu_2class_test_insitu.mat')
+%load('../gen_scripts/trex_insitu_2class_test_insitu.mat')
+load('../datasets/frm_trex_pond_insitu_2class_test_insitu_single_gen_ol_0.1.mat');
 % load('../gen_scripts/yale.mat')
 %%
+rename=1;
+if rename
+    dictSetSmall   = train0data;
+    dictClassSmall = train0class;
+    trainSetSmall = train0data;
+    trainClassSmall = train0class;
+    testSetSmall    = insitu1data;
+    testClassSmall  = insitu1class;
+    validSetSmall   = gen1data;
+    validClassSmall = gen1class;    
+end
+
 % need to sort the dict set
 [dictClassSmall, sidxs] = sort(dictClassSmall);
 dictSetSmall = dictSetSmall(:,sidxs);
@@ -31,7 +44,7 @@ trainSetSmall = normc(trainSetSmall);
 testSetSmall = normc(testSetSmall);
 validSetSmall = normc(validSetSmall);
 
-shiftClasses = 0;
+shiftClasses = 1;
 if shiftClasses
     dictClassSmall = dictClassSmall + 1;
     trainClassSmall = trainClassSmall + 1;
@@ -170,8 +183,9 @@ if do_baseline
     z = [];
     ztestcheck = [];
     zvalidcheck = [];
+    errGoal=0.1;
     
-    [X, h, g, z(end+1,:), zm, c, cc_rate_ini, fa_rate_ini, poor_idxs] = mklsrcUpdateWithAddition(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class,1, [], .01);
+    [X, h, g, z(end+1,:), zm, c, cc_rate_ini, fa_rate_ini, poor_idxs] = mklsrcUpdateWithAddition(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class,1, [], errGoal);
     [C,CM,IND,PER] = confusion(num2bin10(trainClassSmall, length(classes)), num2bin10(h, length(classes)));
     class_percent_correct_train(:,end+1) = PER(:,3);
     
@@ -220,7 +234,7 @@ for smallidx = 1:numBatches
     end
           
     % This one gets the things required to update eta
-    [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, .01);
+    [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, errGoal);
 
     disp(['TESTING: Accuracy: ' num2str(sum(ztest)/numel(ztest))])
 end
@@ -230,9 +244,9 @@ disp(['TRAINING: Final check on all sets'])
 [Hfulltest2, Gfulltest2, Bfulltest2] = precomputeKernelMats(kfncs, Dict, testSetSmall);
 [Hfullvalid, Gfullvalid, Bfullvalid] = precomputeKernelMats(kfncs, Dict, validSetSmall);
 
-[~, htrain, ~, z(end+1,:), ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 0, .01);
-[~, htest, ~, ztestcheck(end+1,:), ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, .01);
-[~, hvalid, ~, zvalidcheck(end+1,:), ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, etatest, validClassSmall, classes, num_per_class, 0, .01);
+[~, htrain, ~, z(end+1,:), ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 0, errGoal);
+[~, htest, ~, ztestcheck(end+1,:), ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, errGoal);
+[~, hvalid, ~, zvalidcheck(end+1,:), ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, etatest, validClassSmall, classes, num_per_class, 0, errGoal);
 validacc2 = sum(z(end,:))/numel(z(end,:));
 display(['TRAINING: Post-Accuracy: ' num2str(sum(z(end,:))/numel(z(end,:)))])
 display(['TESTING: Post-Accuracy: ' num2str(sum(ztestcheck(end,:))/numel(ztestcheck(end,:)))])
@@ -262,7 +276,7 @@ results.z = z;
 results.ztest = ztest;
 results.batchSize = batchSize;
 
-save(['results_single_batch' num2str(results.batchSize) '_run' num2str(runNum) '.mat'], 'results');
+save(['results_single_batch' num2str(results.batchSize) '.mat'], 'results');
 %% Plot?
 figure(1)
 plotconfusion(num2bin10(trainClassSmall, length(classes)), num2bin10(htrain, length(classes)));
