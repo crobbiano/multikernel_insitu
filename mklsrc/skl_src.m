@@ -18,7 +18,7 @@ if rename
     testSetSmall    = insitu1data;
     testClassSmall  = insitu1class;
     validSetSmall   = gen1data;
-    validClassSmall = gen1class;    
+    validClassSmall = gen1class;
 end
 
 % need to sort the dict set
@@ -232,10 +232,30 @@ for smallidx = 1:numBatches
             Bfulltest{kidx,sidx}=computeMultiKernelMatrix(testTemp(:,sidx),testTemp(:,sidx),eta_temp,kfncs);
         end
     end
-          
+    
     % This one gets the things required to update eta
     [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, errGoal);
-
+    
+    % Add the poor samples to the dictionary
+    if sum(poor_idxs)
+        for poor_idx = 1:size(poor_idxs, 1)
+            if poor_idxs(poor_idx) == 1 && poor_added(poor_idx) == 0
+                Dict(:,end+1) = normc(testSetSmall(:, poor_idx));
+                dictClassSmall(end + 1) = testClassSmall(poor_idx);
+            end
+        end
+        %     Rearrange Dict and add to dict classes
+        [~, sort_idxs] = sort(dictClassSmall);
+        dictClassSmall = dictClassSmall(sort_idxs);
+        Dict = Dict(:, sort_idxs);
+        dictSetSmall = Dict;
+        for i=1:num_classes
+            num_per_class(i) = sum(dictClassSmall == classes(i));
+        end
+        [Hfulltest, Gfulltest, Bfulltest] = precomputeKernelMats(kfncs, Dict, testTemp);
+        poor_added = poor_added | poor_idxs;
+    end
+    
     disp(['TESTING: Accuracy: ' num2str(sum(ztest)/numel(ztest))])
 end
 %% 'Check OG data again'

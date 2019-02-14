@@ -287,7 +287,7 @@ for smallidx = 1:numBatches
 end
 % display(['TESTING: Accuracy: ' num2str(sum(ztest)/numel(ztest))])
 %% 'Check OG data again'
-errorGoal = .001;
+errorGoal = .01;
 disp(['TRAINING: Final check on all sets'])
 [Hfull, Gfull, Bfull] = precomputeKernelMats(kfncs, Dict, trainSetSmall);
 [Hfulltest2, Gfulltest2, Bfulltest2] = precomputeKernelMats(kfncs, Dict, testSetSmall);

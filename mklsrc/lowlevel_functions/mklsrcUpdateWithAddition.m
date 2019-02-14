@@ -90,11 +90,11 @@ end
 % Find components that have an error greater then a particular threshold OR
 % the difference between reconstruction error between classes is greater
 % than another threshold
-poor_confidence_idxs = min(retrieve_score,[],2) > .97;
-% llr = retrieve_score(:,1) ./ retrieve_score(:,2);
-% poor_differentiation_idxs = llr > .9 & llr < 1.11;
-llr = abs(retrieve_score(:,1) - retrieve_score(:,2));
-poor_differentiation_idxs = llr < .2;
+% poor_confidence_idxs = min(retrieve_score,[],2) > .97;
+llr = retrieve_score(:,1) ./ retrieve_score(:,2);
+poor_differentiation_idxs = llr > .9 & llr < 1.11;
+% llr = abs(retrieve_score(:,1) - retrieve_score(:,2));
+% poor_differentiation_idxs = llr < .2;
 
 % llr = max(retrieve_score,[],2) - min(retrieve_score,[],2);
 % poor_differentiation_idxs = llr < .1;
