@@ -239,7 +239,7 @@ for smallidx = 1:numBatches
     % Add the poor samples to the dictionary
     if sum(poor_idxs)
         for poor_idx = 1:size(poor_idxs, 1)
-            if poor_idxs(poor_idx) == 1 && poor_added(poor_idx) == 0
+            if poor_idxs(poor_idx) == 1
                 Dict(:,end+1) = normc(testSetSmall(:, poor_idx));
                 dictClassSmall(end + 1) = testClassSmall(poor_idx);
             end
