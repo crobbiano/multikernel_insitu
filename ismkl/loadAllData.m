@@ -1,9 +1,8 @@
-function [Train_Contacts, Test_Contacts, Gen_Contacts] = loadAllData(allDataPath)
+function [Train_Contacts, Test_Contacts, Gen_Contacts] = loadAllData(allDataPath, shift)
 %loadAllData Load the data generated from one of the gen_* scripts and
 %loads it into the correct format for the ISMKL
 %   Detailed explanation goes here
 load(allDataPath);
-shift = 1;
 % make training feature struct for classification later
 for i=1:length(dictClassSmall)
     Train_Contacts(i)=struct('features', double(dictSetSmall(:,i)), 'fn','no','gt',double(dictClassSmall(i)));

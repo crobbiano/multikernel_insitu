@@ -12,16 +12,16 @@ for runNum = 1:1
     
     baseNetworkFile = './irNetwork_base.mat';
     isNetworkFile = './irNetwork_is.mat';
-%     allDataPath = '../gen_scripts/trex_insitu_2class_test_insitu.mat';
-    allDataPath = '../gen_scripts/trex_small_test.mat';
-%     allDataPath = '../gen_scripts/trex_small_big_gen_test.mat';
+    allDataPath = '../gen_scripts/yale.mat';
+%     allDataPath = '../gen_scripts/yale_dark.mat';
     
-    ResidNorm = .1;
+    ResidNorm = .5;
     SS_THRESH = 200;
     CLASS_THRESH = 0.25;
     
+    shift = 0;    
     %% Load data
-    [trainData, isData, genData] = loadAllData(allDataPath);
+    [trainData, isData, genData] = loadAllData(allDataPath, shift);
     %% Train Baseline Classifier
     trainNewBase = 1;
     if trainNewBase
