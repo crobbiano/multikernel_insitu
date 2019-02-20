@@ -33,8 +33,8 @@ for runNum = 1:1
     %allDataPath = '../gen_scripts/trex_pond_insitu_2class_test_insitu.mat';
     % allDataPath = '../gen_scripts/trex_insitu_multi_test_1000insitu.mat';
     
-    ResidNorm = 0.225;%.26;%
-    SS_THRESH = 30;
+    ResidNorm = 0.1;%.26;%
+    SS_THRESH = 300;
     CLASS_THRESH = 0.25;
     
     %% Load data
@@ -94,15 +94,16 @@ plt3=plot(mean(results.correct_class_gen, 1));
 [~,i1max]= max(plt1.YData);
 [~,i2max]= max(plt2.YData);
 [~,i3max]= max(plt3.YData);
-makedatatip(plt1,[size(results.correct_class_train,2) i1max ]);
-makedatatip(plt2,[size(results.correct_class_is,2) i2max]);
-makedatatip(plt3,[size(results.correct_class_gen,2) i3max]);
+% makedatatip(plt1,[size(results.correct_class_train,2) i1max ]);
+% makedatatip(plt2,[size(results.correct_class_is,2) i2max]);
+% makedatatip(plt3,[size(results.correct_class_gen,2) i3max]);
 
-legend('Baseline', 'In-Situ', 'Generalization')
+legend('Baseline', 'In-Situ', 'Generalization','location','southeast')
 ylim([0, 1])
 title(['First IS - Atoms Added: ' num2str(results.atoms_added)])
 xlabel('Training Batch #');
 ylabel('Correct Classification Rate');
+grid minor
 
 figure(899); clf; hold on
 
@@ -113,12 +114,13 @@ plt3=plot(mean(results2.correct_class_gen, 1));
 [~,i1max]= max(plt1.YData);
 [~,i2max]= max(plt2.YData);
 [~,i3max]= max(plt3.YData);
-makedatatip(plt1,[size(results2.correct_class_train,2) i1max ]);
-makedatatip(plt2,[size(results2.correct_class_is,2) i2max]);
-makedatatip(plt3,[size(results2.correct_class_gen,2) i3max]);
+% makedatatip(plt1,[size(results2.correct_class_train,2) i1max ]);
+% makedatatip(plt2,[size(results2.correct_class_is,2) i2max]);
+% makedatatip(plt3,[size(results2.correct_class_gen,2) i3max]);
 
-legend('Baseline', 'In-Situ', 'Generalization')
+legend('Baseline', 'In-Situ', 'Generalization','location','southeast')
 ylim([0, 1])
 title(['Second IS - Atoms Added: ' num2str(results2.atoms_added)])
 xlabel('Training Batch #');
 ylabel('Correct Classification Rate');
+grid minor
