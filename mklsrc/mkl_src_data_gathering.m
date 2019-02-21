@@ -3,12 +3,29 @@ for runNum=1:1
     clearvars -except runNum
     addpath(genpath('srv1_9'));
     addpath('lowlevel_functions')
-    %     load('../gen_scripts/trex_insitu_2class_test_insitu.mat')
-    load('../gen_scripts/yale.mat')
+    load('../gen_scripts/frm_trex_pond_insitu_2class_test_insitu_single_gen_ol_0.1.mat')
     %%
-    % need to sort the dict set
+    rename=1;
+    if rename
+        dictSetSmall   = train0data;
+        dictClassSmall = train0class;
+        trainSetSmall = train0data;
+        trainClassSmall = train0class;
+        testSetSmall    = insitu1data;
+        testClassSmall  = insitu1class;
+        validSetSmall   = gen1data;
+        validClassSmall = gen1class;
+    end
+    
+    % need to sort ALL the sets
     [dictClassSmall, sidxs] = sort(dictClassSmall);
     dictSetSmall = dictSetSmall(:,sidxs);
+    [trainClassSmall, sidxs] = sort(trainClassSmall);
+    trainSetSmall = trainSetSmall(:,sidxs);
+    [testClassSmall, sidxs] = sort(testClassSmall);
+    testSetSmall = testSetSmall(:,sidxs);
+    [validClassSmall, sidxs] = sort(validClassSmall);
+    validSetSmall = validSetSmall(:,sidxs);
     
     % More hacking
     hack = 0;
@@ -29,7 +46,7 @@ for runNum=1:1
     testSetSmall = normc(testSetSmall);
     validSetSmall = normc(validSetSmall);
     
-    shiftClasses = 0;
+    shiftClasses = 1;
     if shiftClasses
         dictClassSmall = dictClassSmall + 1;
         trainClassSmall = trainClassSmall + 1;
@@ -89,7 +106,7 @@ for runNum=1:1
     %     @(x,y) exp((-(repmat(sum(x.^2,1)',1,size(y,2))-2*(x'*y)+repmat(sum(y.^2,1),size(x,2),1))/1.7)); ...
     %     @(x,y) exp((-(repmat(sum(x.^2,1)',1,size(y,2))-2*(x'*y)+repmat(sum(y.^2,1),size(x,2),1))/1.8)); ...
     %     };
-    p = linspace(1,10,10);
+    p = linspace(.01,4,10);
     kfncs  = { ...
         @(x,y) exp((-pdist2(x.',y.').^2./p(1)^2)); ...  % Gaussian
         @(x,y) exp((-pdist2(x.',y.').^2./p(2)^2)); ...
@@ -166,6 +183,7 @@ for runNum=1:1
         num_per_class(i) = sum(dictClassSmall == classes(i));
     end
     %% Loop to get all sparse coeffs
+    errorGoal = .001;
     do_baseline = 0;
     if do_baseline
         t = 0;
@@ -194,20 +212,20 @@ for runNum=1:1
             hprevtest = htest;
             hprevvalid = hvalid;
             
-            [X, h, g, z(end+1,:), zm, c, cc_rate_ini, fa_rate_ini, poor_idxs] = mklsrcUpdateWithAddition(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class,1, .001);
+            [X, h, g, z(end+1,:), zm, c, cc_rate_ini, fa_rate_ini, poor_idxs] = mklsrcUpdateWithAddition(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class,1, [], errorGoal);
             [C,CM,IND,PER] = confusion(num2bin10(trainClassSmall, length(classes)), num2bin10(h, length(classes)));
             class_percent_correct_train(:,end+1) = PER(:,3);
             
             
-            [~, htest, ~, ztestcheck(end+1, :), ~, ~] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, eta, testClassSmall, classes, num_per_class, 0, .001);
+            [~, htest, ~, ztestcheck(end+1, :), ~, ~] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, eta, testClassSmall, classes, num_per_class, 0, errorGoal);
             [C,CM,IND,PER] = confusion(num2bin10(testClassSmall, max(classes)), num2bin10(htest, max(classes)));
             class_percent_correct_test(:,end+1) = PER(:,3);
             
-            [~, hvalid, ~, zvalidcheck(end+1, :), ~, ~] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, .001);
+            [~, hvalid, ~, zvalidcheck(end+1, :), ~, ~] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, errorGoal);
             [C,CM,IND,PER] = confusion(num2bin10(validClassSmall, max(classes)), num2bin10(hvalid, max(classes)));
             class_percent_correct_valid(:,end+1) = PER(:,3);
             
-            Compare the hamming distances
+            %             Compare the hamming distances
             if t > 1
                 changes_baseline(end+1,:) = hprev ~= h;
                 changes_test(end+1,:) = hprevtest ~= htest;
@@ -254,9 +272,9 @@ for runNum=1:1
         
         [Hfulltest2, Gfulltest2, Bfulltest2] = precomputeKernelMats(kfncs, Dict, testSetSmall);
         [Hfullvalid, Gfullvalid, Bfullvalid] = precomputeKernelMats(kfncs, Dict, validSetSmall);
-        [~, ~, ~, zpre, ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class, 1, .001);
-        [~, ~, ~, ztestcheckpre, ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, eta, testClassSmall, classes, num_per_class, 0, .001);
-        [~, ~, ~, zvalidcheckpre, ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, .001);
+        [~, ~, ~, zpre, ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, eta, trainClassSmall, classes, num_per_class, 1, errorGoal);
+        [~, ~, ~, ztestcheckpre, ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, eta, testClassSmall, classes, num_per_class, 0, errorGoal);
+        [~, ~, ~, zvalidcheckpre, ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, errorGoal);
         
         validacc2 = sum(z(end,:))/numel(z(end,:));
         display(['TRAINING: Pre-Accuracy: ' num2str(sum(zpre)/numel(zpre))])
@@ -267,11 +285,11 @@ for runNum=1:1
         load('baseline.mat')
     end
     %% Learn the test set now
-    
     Hfulltest = Hfull;
     t = 0;
     etatest = eta;
-    batchSize = length(testClassSmall);
+    %     batchSize = length(testClassSmall);
+    batchSize = 250;
     numBatches = floor(length(testClassSmall)/batchSize);
     %     numBatches = floor(500/batchSize);
     % numBatches = 20;
@@ -317,7 +335,7 @@ for runNum=1:1
             
             % This one gets the things required to update eta
             %         [~, ~, ~, ztest, zmtest, ctest] = mklsrcUpdate(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class);
-            [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, .001);
+            [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, errorGoal);
             
             if sum(ztest)/length(ztest) == 1 || sum(ctest)==0
                 err = 0;
@@ -378,17 +396,17 @@ for runNum=1:1
         [Hfullvalid, Gfullvalid, Bfullvalid] = precomputeKernelMats(kfncs, Dict, validSetSmall);
         
         % This one gets the things to calculate classification on all testing samples
-        [~, htest, ~, ztestcheck(end+1, :), ~, ~, ~, ~] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, .001);
+        [~, htest, ~, ztestcheck(end+1, :), ~, ~, ~, ~] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, errorGoal);
         [~,~,~,PER] = confusion(num2bin10(testClassSmall, max(classes)), num2bin10(htest, max(classes)));
         class_percent_correct_test(:,end+1) = PER(:,3);
         
         % generalization set
-        [~, hvalid, ~, zvalidcheck(end+1, :), ~, ~, ~, ~] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, .001);
+        [~, hvalid, ~, zvalidcheck(end+1, :), ~, ~, ~, ~] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, eta, validClassSmall, classes, num_per_class, 0, errorGoal);
         [~,~,~,PER] = confusion(num2bin10(validClassSmall, max(classes)), num2bin10(hvalid, max(classes)));
         class_percent_correct_valid(:,end+1) = PER(:,3);
         
         % more baseline stuff
-        [~, h, ~, z(end+1,:), zm, c, ~, ~] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 1, .001);
+        [~, h, ~, z(end+1,:), zm, c, ~, ~] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 1, errorGoal);
         [~,~,~,PER] = confusion(num2bin10(trainClassSmall, max(classes)), num2bin10(h, max(classes)));
         class_percent_correct_train(:,end+1) = PER(:,3);
         
@@ -401,9 +419,9 @@ for runNum=1:1
     %% 'Check OG data again'
     display(['TRAINING: 2nd check'])
     
-    [~, ~, ~, z(end+1,:), ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 1, .001);
-    [~, ~, ~, ztestcheck(end+1,:), ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, .001);
-    [~, ~, ~, zvalidcheck(end+1,:), ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, etatest, validClassSmall, classes, num_per_class, 0, .001);
+    [~, ~, ~, z(end+1,:), ~, ~, cc_rate_fin_train, fa_rate_fin_train] = mklsrcClassify(Hfull, Gfull, Bfull, etatest, trainClassSmall, classes, num_per_class, 1, errorGoal);
+    [~, ~, ~, ztestcheck(end+1,:), ~, ~, cc_rate_fin_test, fa_rate_fin_test] = mklsrcClassify(Hfulltest2, Gfulltest2, Bfulltest2, etatest, testClassSmall, classes, num_per_class, 0, errorGoal);
+    [~, ~, ~, zvalidcheck(end+1,:), ~, ~, cc_rate_fin_valid, fa_rate_fin_valid] = mklsrcClassify(Hfullvalid, Gfullvalid, Bfullvalid, etatest, validClassSmall, classes, num_per_class, 0, errorGoal);
     validacc2 = sum(z(end,:))/numel(z(end,:));
     display(['TRAINING: Post-Accuracy: ' num2str(sum(z(end,:))/numel(z(end,:)))])
     display(['TESTING: Post-Accuracy: ' num2str(sum(ztestcheck(end,:))/numel(ztestcheck(end,:)))])
@@ -436,202 +454,246 @@ for runNum=1:1
     save(['results/results_batch' num2str(results.batchSize) '_run' num2str(runNum) '.mat'], 'results');
 end
 %% Make some figures
-% More baseline
-figure(96); clf;
-idx = 1;
-clear cc b bb
-hold on
-text_vec = 1:2:size(class_percent_correct_train,2);
-for i1=1:size(class_percent_correct_train, 1)
-    if sum(class_percent_correct_train(i1, :)) > 0
-        color = [mod((3*i1/15),1) mod((7*(i1+1)/15),1) mod(1-(i1/10),1)];
-        subplot(11,3,i1)
-        b(idx) = plot(class_percent_correct_train(i1, :),'--', 'Color', color);
-        text(text_vec, class_percent_correct_train(i1, text_vec), num2str(i1-1))
-        cc{idx} = [num2str(i1-1) ' - Test'];
-        idx = idx + 1;
-        grid minor
-        %         ylim([.01 1])
-        ylabel([num2str(i1-1) ' - Correct Classification Rate'])
-        xlabel('In-Situ Learning Iteration');
-        ylim([.5 1])
-        legend('Baseline')
+oldPlotting = 0;
+if oldPlotting
+    % More baseline
+    figure(96); clf;
+    idx = 1;
+    clear cc b bb
+    hold on
+    text_vec = 1:2:size(class_percent_correct_train,2);
+    for i1=1:size(class_percent_correct_train, 1)
+        if sum(class_percent_correct_train(i1, :)) > 0
+            color = [mod((3*i1/15),1) mod((7*(i1+1)/15),1) mod(1-(i1/10),1)];
+            subplot(11,3,i1)
+            b(idx) = plot(class_percent_correct_train(i1, :),'--', 'Color', color);
+            text(text_vec, class_percent_correct_train(i1, text_vec), num2str(i1-1))
+            cc{idx} = [num2str(i1-1) ' - Test'];
+            idx = idx + 1;
+            grid minor
+            %         ylim([.01 1])
+            ylabel([num2str(i1-1) ' - Correct Classification Rate'])
+            xlabel('In-Situ Learning Iteration');
+            ylim([.5 1])
+            legend('Baseline')
+        end
     end
-end
-
-figure(989);clf
-idx = 1;
-clear cc b bb
-hold on
-text_vec = 1:2:size(class_percent_correct_test,2);
-for i2=1:size(class_percent_correct_test, 1)
-    if sum(class_percent_correct_test(i2, :)) > 0
-        color = [mod((3*i2/15),1) mod((7*(i2+1)/15),1) mod(1-(i2/10),1)];
-        subplot(11,3,i2)
-        b(idx) = plot(class_percent_correct_test(i2, :),'--', 'Color', color);
-        text(text_vec, class_percent_correct_test(i2, text_vec), num2str(i2-1))
-        cc{idx} = [num2str(i2-1) ' - Test'];
-        idx = idx + 1;
-        grid minor
-        %         ylim([.01 1])
-        ylabel([num2str(i2-1) ' - Correct Classification Rate'])
-        xlabel('In-Situ Learning Iteration');
-        ylim([.5 1])
-        legend('In-Situ')
+    
+    figure(989);clf
+    idx = 1;
+    clear cc b bb
+    hold on
+    text_vec = 1:2:size(class_percent_correct_test,2);
+    for i2=1:size(class_percent_correct_test, 1)
+        if sum(class_percent_correct_test(i2, :)) > 0
+            color = [mod((3*i2/15),1) mod((7*(i2+1)/15),1) mod(1-(i2/10),1)];
+            subplot(11,3,i2)
+            b(idx) = plot(class_percent_correct_test(i2, :),'--', 'Color', color);
+            text(text_vec, class_percent_correct_test(i2, text_vec), num2str(i2-1))
+            cc{idx} = [num2str(i2-1) ' - Test'];
+            idx = idx + 1;
+            grid minor
+            %         ylim([.01 1])
+            ylabel([num2str(i2-1) ' - Correct Classification Rate'])
+            xlabel('In-Situ Learning Iteration');
+            ylim([.5 1])
+            legend('In-Situ')
+        end
     end
+    
+    % idx = 1;
+    % clear cc b bb
+    % hold on
+    % text_vec = 1:2:size(class_percent_correct_valid,2);
+    % for i=1:size(class_percent_correct_valid, 1)
+    %     if sum(class_percent_correct_valid(i, :)) > 0
+    %         color = [mod((3*i/15),1) mod((7*(i+1)/15),1) 1-(i/10)];
+    %         subplot(3,2,i2+i1+i)
+    %         b(idx) = plot(class_percent_correct_valid(i, :),'--', 'Color', color);
+    %         text(text_vec, class_percent_correct_valid(i, text_vec), num2str(i-1))
+    %         cc{idx} = [num2str(i-1) ' - Test'];
+    %         idx = idx + 1;
+    %         grid minor
+    %         %         ylim([.01 1])
+    %         ylabel([num2str(i-1) ' - Correct Classification Rate'])
+    %         xlabel('In-Situ Learning Iteration');
+    %         ylim([.5 1])
+    %         legend('Generalization')
+    %     end
+    % end
+    
+    %%%%%%%%%%%%%%%%%%%%
+    figure(919); clf; hold on
+    subplot(3,1,1)
+    hold on
+    clear bb cc
+    text_vec = 1:500:size(fa_rate_fin_train, 2);
+    for i=1:size(cc_rate_fin_train,1)
+        color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
+        bb(i) = plot(fa_rate_fin_train(i,:), cc_rate_fin_train(i,:),'--', 'Color', color);
+        %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
+        cc{i} = [num2str(i-1) ''];
+    end
+    % ylim([.75 1]);
+    grid on;
+    legend(cc)
+    ylabel('Probability of correct classification')
+    xlabel('Probability of false alarm')
+    legend('Baseline - 0', '1')
+    
+    subplot(3,1,2)
+    hold on
+    clear bb cc
+    text_vec = 1:500:size(fa_rate_fin_test, 2);
+    for i=1:size(cc_rate_fin_test,1)
+        color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
+        bb(i) = plot(fa_rate_fin_test(i,:), cc_rate_fin_test(i,:),'--', 'Color', color);
+        %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
+        cc{i} = [num2str(i-1) ''];
+    end
+    % ylim([.75 1]);
+    grid on;
+    legend(cc)
+    ylabel('Probability of correct classification')
+    xlabel('Probability of false alarm')
+    legend('In-Situ - 0', '1')
+    
+    subplot(3,1,3)
+    hold on
+    clear bb cc
+    text_vec = 1:500:size(fa_rate_fin_valid, 2);
+    for i=1:size(cc_rate_fin_valid,1)
+        color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
+        bb(i) = plot(fa_rate_fin_valid(i,:), cc_rate_fin_valid(i,:),'--', 'Color', color);
+        %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
+        cc{i} = [num2str(i-1) ''];
+    end
+    % ylim([.75 1]);
+    grid on;
+    legend(cc)
+    ylabel('Probability of correct classification')
+    xlabel('Probability of false alarm')
+    legend('Generalization - 0', '1')
+    %%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%
+    figure(906); clf;
+    subplot(3, 1, 1);hold on
+    fa_rate_fin_avg_train = nanmean(fa_rate_fin_train);
+    cc_rate_fin_avg_train = nanmean(cc_rate_fin_train);
+    fa_rate_ini_avg_train = nanmean(fa_rate_ini_train);
+    cc_rate_ini_avg_train = nanmean(cc_rate_ini_train);
+    plot(fa_rate_ini_avg_train,cc_rate_ini_avg_train,'LineWidth',2);
+    plot(fa_rate_fin_avg_train,cc_rate_fin_avg_train,'r','LineWidth',2)
+    xlabel('P_{FA}')
+    ylabel('P_{CC}')
+    legend('Baseline: After Baseline Training','Baseline: After In-Situ Learning')
+    grid on
+    
+    subplot(3, 1, 2);hold on
+    fa_rate_fin_avg_test = nanmean(fa_rate_fin_test);
+    cc_rate_fin_avg_test = nanmean(cc_rate_fin_test);
+    fa_rate_ini_avg_test = nanmean(fa_rate_ini_test);
+    cc_rate_ini_avg_test = nanmean(cc_rate_ini_test);
+    plot(fa_rate_ini_avg_test,cc_rate_ini_avg_test,'LineWidth',2);
+    plot(fa_rate_fin_avg_test,cc_rate_fin_avg_test,'r','LineWidth',2)
+    xlabel('P_{FA}')
+    ylabel('P_{CC}')
+    legend('In-Situ: After Baseline Training','In-Situ: After In-Situ Learning')
+    grid on
+    
+    subplot(3, 1, 3);hold on
+    fa_rate_fin_avg_valid = nanmean(fa_rate_fin_valid);
+    cc_rate_fin_avg_valid = nanmean(cc_rate_fin_valid);
+    fa_rate_ini_avg_valid = nanmean(fa_rate_ini_valid);
+    cc_rate_ini_avg_valid = nanmean(cc_rate_ini_valid);
+    plot(fa_rate_ini_avg_valid,cc_rate_ini_avg_valid,'LineWidth',2);
+    plot(fa_rate_fin_avg_valid,cc_rate_fin_avg_valid,'r','LineWidth',2)
+    xlabel('P_{FA}')
+    ylabel('P_{CC}')
+    legend('Generalization: After Baseline Training','Generalization: After In-Situ Learning')
+    grid on
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    figure(48); clf; hold on
+    subplot(3, 1, 1)
+    plot( mean(z,2), '--');
+    % plot( mean(ztest,2));
+    legend('Baseline')
+    xlabel('In-Situ Learning Iteration'); ylabel('CCR')
+    ylim([.5 1])
+    grid minor
+    title(['# Partitions: ' num2str(numBatches) ' Batch size: ' num2str(numel(testTempClass))])
+    
+    subplot(3, 1, 2)
+    plot( mean(ztestcheck,2), '--');
+    % plot( mean(ztest,2));
+    legend('In-Situ')
+    xlabel('In-Situ Learning Iteration'); ylabel('CCR')
+    ylim([.5 1])
+    grid minor
+    
+    subplot(3, 1, 3)
+    plot( mean(zvalidcheck,2), '--');
+    % plot( mean(ztest,2));
+    legend('Generalization')
+    xlabel('In-Situ Learning Iteration'); ylabel('CCR')
+    ylim([.5 1])
+    grid minor
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    figure(922); clf;
+    subplot(3,1,1)
+    plot(sum(changes_baseline, 2)./(size(changes_baseline, 2)), '--')
+    grid minor
+    subplot(3,1,2)
+    plot(sum(changes_test, 2)./(size(changes_test, 2)), '--')
+    grid minor
+    ylabel('% of samples that have changes in classification')
+    subplot(3,1,3)
+    plot(sum(changes_valid, 2)./(size(changes_valid, 2)), '--')
+    xlabel('In-Situ Learning Iteration')
+    grid minor
 end
+%% plotting that matches the ismkl scripts
+figure(348); clf; hold on
+plt1=plot(mean(results.class_percent_correct_train, 1),'-.');
+plt2=plot(mean(results.class_percent_correct_test, 1),'--');
+plt3=plot(mean(results.class_percent_correct_valid, 1));
 
-% idx = 1;
-% clear cc b bb
-% hold on
-% text_vec = 1:2:size(class_percent_correct_valid,2);
-% for i=1:size(class_percent_correct_valid, 1)
-%     if sum(class_percent_correct_valid(i, :)) > 0
-%         color = [mod((3*i/15),1) mod((7*(i+1)/15),1) 1-(i/10)];
-%         subplot(3,2,i2+i1+i)
-%         b(idx) = plot(class_percent_correct_valid(i, :),'--', 'Color', color);
-%         text(text_vec, class_percent_correct_valid(i, text_vec), num2str(i-1))
-%         cc{idx} = [num2str(i-1) ' - Test'];
-%         idx = idx + 1;
-%         grid minor
-%         %         ylim([.01 1])
-%         ylabel([num2str(i-1) ' - Correct Classification Rate'])
-%         xlabel('In-Situ Learning Iteration');
-%         ylim([.5 1])
-%         legend('Generalization')
-%     end
-% end
+% [~,i1max]= max(plt1.YData);
+% [~,i2max]= max(plt2.YData);
+% [~,i3max]= max(plt3.YData);
+% makedatatip(plt1,[size(results.correct_class_train,2) i1max ]);
+% makedatatip(plt2,[size(results.correct_class_is,2) i2max]);
+% makedatatip(plt3,[size(results.correct_class_gen,2) i3max]);
 
-%%%%%%%%%%%%%%%%%%%%
-figure(919); clf; hold on
-subplot(3,1,1)
-hold on
-clear bb cc
-text_vec = 1:500:size(fa_rate_fin_train, 2);
-for i=1:size(cc_rate_fin_train,1)
-    color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
-    bb(i) = plot(fa_rate_fin_train(i,:), cc_rate_fin_train(i,:),'--', 'Color', color);
-    %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
-    cc{i} = [num2str(i-1) ''];
-end
-% ylim([.75 1]);
-grid on;
-legend(cc)
-ylabel('Probability of correct classification')
-xlabel('Probability of false alarm')
-legend('Baseline - 0', '1')
-
-subplot(3,1,2)
-hold on
-clear bb cc
-text_vec = 1:500:size(fa_rate_fin_test, 2);
-for i=1:size(cc_rate_fin_test,1)
-    color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
-    bb(i) = plot(fa_rate_fin_test(i,:), cc_rate_fin_test(i,:),'--', 'Color', color);
-    %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
-    cc{i} = [num2str(i-1) ''];
-end
-% ylim([.75 1]);
-grid on;
-legend(cc)
-ylabel('Probability of correct classification')
-xlabel('Probability of false alarm')
-legend('In-Situ - 0', '1')
-
-subplot(3,1,3)
-hold on
-clear bb cc
-text_vec = 1:500:size(fa_rate_fin_valid, 2);
-for i=1:size(cc_rate_fin_valid,1)
-    color = [mod((3*i/15),1) mod((6*(i+1)/15),1) mod(1-(i/10),1)];
-    bb(i) = plot(fa_rate_fin_valid(i,:), cc_rate_fin_valid(i,:),'--', 'Color', color);
-    %     text(results.fa_rate_nonan(i, text_vec), results.cc_rate_nonan(i, text_vec), num2str(i-1));
-    cc{i} = [num2str(i-1) ''];
-end
-% ylim([.75 1]);
-grid on;
-legend(cc)
-ylabel('Probability of correct classification')
-xlabel('Probability of false alarm')
-legend('Generalization - 0', '1')
-%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure(906); clf;
-subplot(3, 1, 1);hold on
-fa_rate_fin_avg_train = nanmean(fa_rate_fin_train);
-cc_rate_fin_avg_train = nanmean(cc_rate_fin_train);
-fa_rate_ini_avg_train = nanmean(fa_rate_ini_train);
-cc_rate_ini_avg_train = nanmean(cc_rate_ini_train);
-plot(fa_rate_ini_avg_train,cc_rate_ini_avg_train,'LineWidth',2);
-plot(fa_rate_fin_avg_train,cc_rate_fin_avg_train,'r','LineWidth',2)
-xlabel('P_{FA}')
-ylabel('P_{CC}')
-legend('Baseline: After Baseline Training','Baseline: After In-Situ Learning')
-grid on
-
-subplot(3, 1, 2);hold on
-fa_rate_fin_avg_test = nanmean(fa_rate_fin_test);
-cc_rate_fin_avg_test = nanmean(cc_rate_fin_test);
-fa_rate_ini_avg_test = nanmean(fa_rate_ini_test);
-cc_rate_ini_avg_test = nanmean(cc_rate_ini_test);
-plot(fa_rate_ini_avg_test,cc_rate_ini_avg_test,'LineWidth',2);
-plot(fa_rate_fin_avg_test,cc_rate_fin_avg_test,'r','LineWidth',2)
-xlabel('P_{FA}')
-ylabel('P_{CC}')
-legend('In-Situ: After Baseline Training','In-Situ: After In-Situ Learning')
-grid on
-
-subplot(3, 1, 3);hold on
-fa_rate_fin_avg_valid = nanmean(fa_rate_fin_valid);
-cc_rate_fin_avg_valid = nanmean(cc_rate_fin_valid);
-fa_rate_ini_avg_valid = nanmean(fa_rate_ini_valid);
-cc_rate_ini_avg_valid = nanmean(cc_rate_ini_valid);
-plot(fa_rate_ini_avg_valid,cc_rate_ini_avg_valid,'LineWidth',2);
-plot(fa_rate_fin_avg_valid,cc_rate_fin_avg_valid,'r','LineWidth',2)
-xlabel('P_{FA}')
-ylabel('P_{CC}')
-legend('Generalization: After Baseline Training','Generalization: After In-Situ Learning')
-grid on
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure(48); clf; hold on
-subplot(3, 1, 1)
-plot( mean(z,2), '--');
-% plot( mean(ztest,2));
-legend('Baseline')
-xlabel('In-Situ Learning Iteration'); ylabel('CCR')
-ylim([.5 1])
-grid minor
-title(['# Partitions: ' num2str(numBatches) ' Batch size: ' num2str(numel(testTempClass))])
-
-subplot(3, 1, 2)
-plot( mean(ztestcheck,2), '--');
-% plot( mean(ztest,2));
-legend('In-Situ')
-xlabel('In-Situ Learning Iteration'); ylabel('CCR')
-ylim([.5 1])
+legend('Baseline', 'In-Situ', 'Generalization','location','southeast')
+ylim([0, 1])
+title(['First IS - Atoms Added: ' num2str(results.atoms_added)])
+xlabel('Training Batch #');
+ylabel('Correct Classification Rate');
 grid minor
 
-subplot(3, 1, 3)
-plot( mean(zvalidcheck,2), '--');
-% plot( mean(ztest,2));
-legend('Generalization')
-xlabel('In-Situ Learning Iteration'); ylabel('CCR')
-ylim([.5 1])
-grid minor
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ylim([.4 1])
+figure(569); clf; hold on
 
-figure(922); clf;
-subplot(3,1,1)
-plot(sum(changes_baseline, 2)./(size(changes_baseline, 2)), '--')
+plt1=plot(mean(results2.class_percent_correct_train, 1),'-.');
+plt2=plot(mean(results2.class_percent_correct_test, 1),'--');
+plt3=plot(mean(results2.class_percent_correct_valid, 1));
+
+% [~,i1max]= max(plt1.YData);
+% [~,i2max]= max(plt2.YData);
+% [~,i3max]= max(plt3.YData);
+% makedatatip(plt1,[size(results2.correct_class_train,2) i1max ]);
+% makedatatip(plt2,[size(results2.correct_class_is,2) i2max]);
+% makedatatip(plt3,[size(results2.correct_class_gen,2) i3max]);
+
+legend('Baseline', 'In-Situ', 'Generalization','location','southeast')
+ylim([0, 1])
+title(['Second IS - Atoms Added: ' num2str(results2.atoms_added)])
+xlabel('Training Batch #');
+ylabel('Correct Classification Rate');
 grid minor
-subplot(3,1,2)
-plot(sum(changes_test, 2)./(size(changes_test, 2)), '--')
-grid minor
-ylabel('% of samples that have changes in classification')
-subplot(3,1,3)
-plot(sum(changes_valid, 2)./(size(changes_valid, 2)), '--')
-xlabel('In-Situ Learning Iteration')
-grid minor
+ylim([.4 1])

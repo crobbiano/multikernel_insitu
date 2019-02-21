@@ -34,7 +34,7 @@ for runNum = 1:1
     % allDataPath = '../gen_scripts/trex_insitu_multi_test_1000insitu.mat';
     
     ResidNorm = 0.1;%.26;%
-    SS_THRESH = 300;
+    SS_THRESH = 50;
     CLASS_THRESH = 0.25;
     
     %% Load data
@@ -105,6 +105,7 @@ xlabel('Training Batch #');
 ylabel('Correct Classification Rate');
 grid minor
 
+ylim([.4 1])
 figure(899); clf; hold on
 
 plt1=plot(mean(results2.correct_class_train, 1),'-.');
@@ -124,3 +125,4 @@ title(['Second IS - Atoms Added: ' num2str(results2.atoms_added)])
 xlabel('Training Batch #');
 ylabel('Correct Classification Rate');
 grid minor
+ylim([.4 1])

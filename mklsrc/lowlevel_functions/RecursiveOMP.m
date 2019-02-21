@@ -1,7 +1,7 @@
 function X = RecursiveOMP(D,X,Y,ResidNorm)
 
 % Specify coefficient tolerance
-CoeffTol = 1e-3;
+CoeffTol = 1e-4;
 
 % Initialize coefficients
 if isempty(X)
@@ -49,7 +49,12 @@ for i = 1:size(Y,2)
     end
     
     % Add atoms in D until norm of residual falls below specified value
-    while norm(r) > resid_norm
+    xbest = x;
+    maxNumIterations = 1000;
+    numIterations = 1;
+    rprev = r;
+    Indicesbest = [];
+    while (norm(r) > resid_norm) & (numIterations < maxNumIterations)
                 
         % Find best match
         [~,ind] = max(abs(r'*D));
@@ -67,10 +72,20 @@ for i = 1:size(Y,2)
         % Update coefficients
         x = [x-alpha*b;alpha];
         r = r-alpha*d_tilde;
+        
+        if norm(rprev) > norm(r)
+            xbest = x;
+            Indicesbest = Indices;
+        end
+        rprev = r;
+        numIterations = numIterations + 1;
     end
-    
+    if isempty(Indicesbest)
+        Indicesbest = Indices;
+    end
     % Fill-in coefficients
-    X(Indices,i) = x;
+    X(Indicesbest,i) = xbest;
+%     X(Indices,i) = x;
     
 end
 
