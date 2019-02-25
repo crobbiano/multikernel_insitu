@@ -3,7 +3,7 @@ clearvars -except runNum
 addpath(genpath('srv1_9'));
 addpath('lowlevel_functions')
 %     load('../gen_scripts/trex_insitu_2class_test_insitu.mat')
-load('../gen_scripts/yale.mat')
+load('../gen_scripts/yale_dark.mat')
 %%
 % need to sort the dict set
 [dictClassSmall, sidxs] = sort(dictClassSmall);
@@ -256,7 +256,11 @@ for smallidx = 1:numBatches
         % This one gets the things required to update eta
         [~, ~, ~, ztest, zmtest, ctest, ~, ~, poor_idxs] = mklsrcUpdateWithAddition(Hfulltest, Gfulltest, Bfulltest, etatest, testTempClass, classes, num_per_class, 0, testTemp, errorGoal);
         
-        if sum(ztest)/length(ztest) == 1 || sum(ctest)==0
+        if sum(ztest)/length(ztest) == 1 
+            err = 0;
+        elseif sum(poor_idxs) && prod(poor_added(poor_idxs)) == 0
+            err = err;
+        elseif sum(ctest) == 0 
             err = 0;
         else
             [etatest, err] = updateEta(etatest, ctest, mu, ztest, zmtest);
@@ -329,8 +333,17 @@ save(['results_batch' num2str(results.batchSize) '_run' num2str(runNum) '.mat'],
 
 %% Plot?
 figure(1)
-plotconfusion(num2bin10(trainClassSmall, length(classes)), num2bin10(htrain, length(classes)));
+[~, cm_base, ~, ~] = confusion(num2bin10(trainClassSmall, length(classes)), num2bin10(htrain, length(classes)));
+imagesc(normr(cm_base));
+colormap((jet))
+colorbar
 figure(2)
-plotconfusion(num2bin10(testClassSmall, length(classes)), num2bin10(htest, length(classes)));
+[~, cm_test, ~, ~] = confusion(num2bin10(testClassSmall, length(classes)), num2bin10(htest, length(classes)));
+imagesc(normr(cm_test));
+colormap((jet))
+colorbar
 figure(3)
-plotconfusion(num2bin10(validClassSmall, length(classes)), num2bin10(hvalid, length(classes)));
+[~, cm_valid, ~, ~] = confusion(num2bin10(validClassSmall, length(classes)), num2bin10(hvalid, length(classes)));
+imagesc(normr(cm_valid));
+colormap((jet))
+colorbar

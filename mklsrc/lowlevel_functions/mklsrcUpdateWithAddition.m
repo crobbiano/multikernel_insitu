@@ -10,6 +10,9 @@ optionKSRSC.residual=1e-4;
 optionKSRSC.tof=1e-4;
 
 H=computeMultiKernelMatrixFromPrecomputed(Hfull,eta);
+retrieve_score = zeros(length(trainClassSmall),length(classes));
+h = zeros(1,length(trainClassSmall));
+z = zeros(1,length(trainClassSmall));
 
 for idx = 1:length(trainClassSmall)
     % compute kernels
@@ -33,7 +36,7 @@ for idx = 1:length(trainClassSmall)
     end
     % KSRSC sparse coding
     %         [X(:, idx), ~, ~] =KSRSC(H,G,diag(B),optionKSRSC);
-    %     X(:,idx) = OMP(Htmp, G, 35, errorGoal);
+%         X(:,idx) = OMP(Htmp, G, 35, errorGoal);
     X(:,idx) = RecursiveOMP(Htmp, [], G, errorGoal);
     % Find class - calculate h (class) and z (correct class)
     classerr = zeros(1, length(classes));
@@ -54,7 +57,7 @@ for idx = 1:length(trainClassSmall)
     
     % Need to calculate the ability to classify for each individual kernel
     for kidx=1:length(eta)
-        eta_temp = [];
+        eta_temp = zeros(size(eta));
         eta_temp(kidx) = 1; % place a 1 in the current kernel
         
         H_temp = computeMultiKernelMatrixFromPrecomputed(Hfull, eta_temp);
@@ -76,7 +79,7 @@ for idx = 1:length(trainClassSmall)
         zm(kidx, idx) = g(kidx, idx) == trainClassSmall(idx);
         
         if sum(1-z)
-            c(kidx,1) = sum(zm(kidx, find(z==0)))/sum(1-z);
+            c(kidx,1) = sum(zm(kidx, find(z(1:idx)==0)))/sum(1-z);
         else
             c(kidx,1) = 0;
         end
@@ -91,8 +94,9 @@ end
 % the difference between reconstruction error between classes is greater
 % than another threshold
 % poor_confidence_idxs = min(retrieve_score,[],2) > .97;
-llr = log10(retrieve_score(:,1) ./ retrieve_score(:,2));
-poor_differentiation_idxs = llr > -.5 & llr < .5;
+% llr = log10(retrieve_score(:,1) ./ retrieve_score(:,2));
+% poor_differentiation_idxs = llr > -.0005 & llr < .0005;
+poor_differentiation_idxs = max(abs(retrieve_score - min(retrieve_score,[],2)),[],2) < mean(max(abs(retrieve_score - min(retrieve_score,[],2)),[],2))/2;
 % llr = abs(retrieve_score(:,1) - retrieve_score(:,2));
 % poor_differentiation_idxs = llr < .2;
 

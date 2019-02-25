@@ -12,8 +12,8 @@ for runNum = 1:1
     
     baseNetworkFile = './irNetwork_base.mat';
     isNetworkFile = './irNetwork_is.mat';
-    allDataPath = '../gen_scripts/yale.mat';
-%     allDataPath = '../gen_scripts/yale_dark.mat';
+%     allDataPath = '../gen_scripts/yale.mat';
+    allDataPath = '../gen_scripts/yale_dark.mat';
     
     ResidNorm = .5;
     SS_THRESH = 200;
