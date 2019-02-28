@@ -150,7 +150,7 @@ for i=1:num_classes
     num_per_class(i) = sum(dictClassSmall == classes(i));
 end
 %% Loop to get all sparse coeffs
-do_baseline = 1;
+do_baseline = 0;
 if do_baseline
     t = 0;
     h = zeros(1, length(trainClassSmall));
@@ -222,7 +222,7 @@ Hfulltest = Hfull;
 t = 0;
 etatest = eta;
 errorGoal = .001;
-batchSize = length(testClassSmall);
+batchSize = floor(length(testClassSmall)/3);
 numBatches = floor(length(testClassSmall)/batchSize);
 available = 1:length(testClassSmall);
 for smallidx = 1:numBatches
@@ -233,6 +233,11 @@ for smallidx = 1:numBatches
     
     testTemp = testSetSmall(:, selected_samples);
     testTempClass = testClassSmall(selected_samples);
+    
+    % Need to sort the samples
+    [testTempClass, sidxs] = sort(testTempClass);
+    testTemp = testTemp(:,sidxs);
+
     
     Gfulltest = cell(length(kfncs), size(testTemp, 2));
     Bfulltest = cell(length(kfncs), size(testTemp, 2));

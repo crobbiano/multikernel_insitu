@@ -311,6 +311,10 @@ for runNum=1:1
         testTemp = testSetSmall(:, selected_samples);
         testTempClass = testClassSmall(selected_samples);
         
+        % Need to sort the samples
+        [testTempClass, sidxs] = sort(testTempClass);
+        testTemp = testTemp(:,sidxs);
+        
         %         testTemp = testSetSmall(:, (smallidx-1)*batchSize + 1: (smallidx-1)*batchSize + batchSize);
         %         testTempClass = testClassSmall((smallidx-1)*batchSize + 1: (smallidx-1)*batchSize + batchSize);
         
