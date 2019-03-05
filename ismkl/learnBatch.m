@@ -59,7 +59,7 @@ else % try updating weights and checking increase in sparsity
     W = RecursiveOMP(Kmat,irNetwork.WeightMat,L,ResidNorm);
     
     % Find increase in number of coefficients 
-    DelNumCoefficients = max(sum( W ~= 0, 1 ) - sum( irNetwork.WeightMat ~= 0, 1 ));
+    DelNumCoefficients = max(sum( W ~= 0, 1 ) - sum( irNetwork.WeightMat~= 0, 1 )); 
     
     if DelNumCoefficients < SS_THRESH % if number of coefficients added small, update classifier
         % Update classifier

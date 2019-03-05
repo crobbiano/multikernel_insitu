@@ -360,8 +360,8 @@ for runNum=1:1
             if sum(poor_idxs)
                 for poor_idx = 1:size(poor_idxs, 1)
                     if poor_idxs(poor_idx) == 1 && poor_added(poor_idx) == 0
-                        Dict(:,end+1) = normc(testSetSmall(:, poor_idx));
-                        dictClassSmall(end + 1) = testClassSmall(poor_idx);
+                        Dict(:,end+1) = normc(testTemp(:, poor_idx));
+                        dictClassSmall(end + 1) = testTempClass(poor_idx);
                         results.atoms_added = results.atoms_added + 1;
                     end
                 end

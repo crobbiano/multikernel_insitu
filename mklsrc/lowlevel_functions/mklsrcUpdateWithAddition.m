@@ -96,7 +96,7 @@ end
 % poor_confidence_idxs = min(retrieve_score,[],2) > .97;
 % llr = log10(retrieve_score(:,1) ./ retrieve_score(:,2));
 % poor_differentiation_idxs = llr > -.0005 & llr < .0005;
-poor_differentiation_idxs = max(abs(retrieve_score - min(retrieve_score,[],2)),[],2) < mean(max(abs(retrieve_score - min(retrieve_score,[],2)),[],2))/2;
+poor_differentiation_idxs = max(abs(retrieve_score - min(retrieve_score,[],2)),[],2) < max(max(abs(retrieve_score - min(retrieve_score,[],2)),[],2))/20;
 % llr = abs(retrieve_score(:,1) - retrieve_score(:,2));
 % poor_differentiation_idxs = llr < .2;
 

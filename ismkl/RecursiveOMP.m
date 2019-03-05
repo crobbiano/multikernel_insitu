@@ -82,6 +82,8 @@ for i = 1:size(Y,2)
     end
     if isempty(Indicesbest)
         Indicesbest = Indices;
+        xbest = x;
+%         display(['fail']);
     end
     % Fill-in coefficients
     X(Indicesbest,i) = xbest;

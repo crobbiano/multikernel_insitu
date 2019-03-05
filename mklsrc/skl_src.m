@@ -240,8 +240,8 @@ for smallidx = 1:numBatches
     if sum(poor_idxs)
         for poor_idx = 1:size(poor_idxs, 1)
             if poor_idxs(poor_idx) == 1
-                Dict(:,end+1) = normc(testSetSmall(:, poor_idx));
-                dictClassSmall(end + 1) = testClassSmall(poor_idx);
+                Dict(:,end+1) = normc(testTemp(:, poor_idx));
+                dictClassSmall(end + 1) = testTempClass(poor_idx);
             end
         end
         %     Rearrange Dict and add to dict classes
