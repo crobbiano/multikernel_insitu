@@ -12,13 +12,14 @@ for runNum = 1:1
     
     baseNetworkFile = './irNetwork_base.mat';
     isNetworkFile = './irNetwork_is.mat';
-    allDataPath = '../gen_scripts/yale.mat';
+%     allDataPath = '../gen_scripts/yale.mat';
 %     allDataPath = '../gen_scripts/yale_dark.mat';
+    allDataPath = '../gen_scripts/yale_darkIS_darkMediumGen.mat';
 %     allDataPath = '../gen_scripts/davis_base_boss_is.mat';
 %     allDataPath = '../gen_scripts/boss_base_davis_is.mat';
     
-    ResidNorm = .15;
-    SS_THRESH = 60;
+    ResidNorm = .4;
+    SS_THRESH = 150;
     CLASS_THRESH = 0.25;
     
     shift = 0;    
@@ -26,7 +27,7 @@ for runNum = 1:1
     [trainData, isData, genData] = loadAllData(allDataPath, shift);
 %     [isData,trainData,genData] = loadAllData(allDataPath, shift);
     %% Train Baseline Classifier
-    trainNewBase = 1;
+    trainNewBase = 0;
     if trainNewBase
         baseNetwork = trnMultikernel([trainData.gt],[trainData.features]);
         saveBase = 1;
@@ -75,3 +76,23 @@ xticklabels(xxticks)
 xlabel('Incremental samples learned')
 title(['Atoms added: ' num2str(results.atoms_added)])
 ylabel('Correct Classification Rate')
+
+%% generate confusion matrices
+figure(1)
+[~, cm_base, ~, ~] = confusion(num2bin10([trainData.gt], length(unique([trainData.gt]))), num2bin10(results.guess_class_train, length(unique([trainData.gt]))));
+imagesc(normc(cm_base));
+% colormap((gray))
+colorbar
+title('Confusion matrix for baseline data')
+figure(2)
+[~, cm_test, ~, ~] = confusion(num2bin10([isData.gt], length(unique([isData.gt]))), num2bin10(results.guess_class_is, length(unique([isData.gt]))));
+imagesc(normc(cm_test));
+% colormap((gray))
+colorbar
+title('Confusion matrix for in-situ data')
+figure(3)
+[~, cm_valid, ~, ~] = confusion(num2bin10([genData.gt], length(unique([genData.gt]))), num2bin10(results.guess_class_gen, length(unique([genData.gt]))));
+imagesc(normc(cm_valid));
+% colormap((gray))
+colorbar
+title('Confusion matrix for generalization data')

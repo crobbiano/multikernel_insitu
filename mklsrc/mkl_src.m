@@ -2,12 +2,12 @@ clc
 clearvars -except runNum
 addpath(genpath('srv1_9'));
 addpath('lowlevel_functions')
-load('../gen_scripts/frm_trex_pond_insitu_2class_test_insitu_single_gen_ol_0.1.mat')
+% load('../gen_scripts/frm_trex_pond_insitu_2class_test_insitu_single_gen_ol_0.1.mat')
 % load('../gen_scripts/yale_dark.mat')
-% load('../gen_scripts/yale.mat')
+load('../gen_scripts/yale_darkIS_darkMediumGen.mat')
 runNum = 1;
 %%
-rename=1;
+rename=0;
 if rename
     dictSetSmall   = train0data;
     dictClassSmall = train0class;
@@ -109,7 +109,7 @@ X = zeros(size(Dict, 2), size(trainSetSmall, 2));
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(8)^2)); ...
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(9)^2)); ...
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(10)^2)); ...
-%                 @(x,y) exp((-pdist2(x.',y.').^2./p(11)^2)); ...  % Gaussian
+%         @(x,y) exp((-pdist2(x.',y.').^2./p(11)^2)); ...  % Gaussian
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(12)^2)); ...
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(13)^2)); ...
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(14)^2)); ...
@@ -120,7 +120,7 @@ X = zeros(size(Dict, 2), size(trainSetSmall, 2));
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(19)^2)); ...
 %         @(x,y) exp((-pdist2(x.',y.').^2./p(20)^2)); ...
 %          };
-p = linspace(.1,4,10);
+p = linspace(.01,3,10);
 kfncs  = { ...
     @(x,y) exp((-pdist2(x.',y.').^2./p(1)^2)); ...  % Gaussian
     @(x,y) exp((-pdist2(x.',y.').^2./p(2)^2)); ...
@@ -135,9 +135,11 @@ kfncs  = { ...
     @(x,y) (x'*y + 1.0).^1; ...
     @(x,y) (x'*y + 1.0).^2; ...
     @(x,y) (x'*y + 1.0).^3; ...
+    @(x,y) (x'*y + 1.0).^4; ...
     @(x,y) (x'*y + 0.5).^1; ...  % Polynomial
     @(x,y) (x'*y + 0.5).^2; ...
     @(x,y) (x'*y + 0.5).^3; ...
+    @(x,y) (x'*y + 0.5).^4; ...
     };
 %% Compute the M kernel matrices
 display(['BASELINE: Generating first set of matrices: '])
@@ -273,7 +275,8 @@ Hfulltest = Hfull;
 t = 0;
 etatest = eta;
 errorGoal = .001;
-batchSize = floor(length(testClassSmall)/5);
+% batchSize = floor(length(testClassSmall)/1);
+batchSize = 50;
 numBatches = floor(length(testClassSmall)/batchSize);
 available = 1:length(testClassSmall);
 for smallidx = 1:numBatches
@@ -349,7 +352,7 @@ for smallidx = 1:numBatches
 end
 % display(['TESTING: Accuracy: ' num2str(sum(ztest)/numel(ztest))])
 %% 'Check OG data again'
-errorGoal = .01;
+errorGoal = .001;
 disp(['TRAINING: Final check on all sets'])
 [Hfull, Gfull, Bfull] = precomputeKernelMats(kfncs, Dict, trainSetSmall);
 [Hfulltest2, Gfulltest2, Bfulltest2] = precomputeKernelMats(kfncs, Dict, testSetSmall);
@@ -392,16 +395,19 @@ save(['results_batch' num2str(results.batchSize) '_run' num2str(runNum) '.mat'],
 %% Plot?
 figure(1)
 [~, cm_base, ~, ~] = confusion(num2bin10(trainClassSmall, length(classes)), num2bin10(htrain, length(classes)));
-imagesc(normr(cm_base));
-colormap((jet))
+imagesc(normc(cm_base));
+% colormap((gray))
 colorbar
+title('Confusion matrix for baseline data')
 figure(2)
 [~, cm_test, ~, ~] = confusion(num2bin10(testClassSmall, length(classes)), num2bin10(htest, length(classes)));
-imagesc(normr(cm_test));
-colormap((jet))
+imagesc(normc(cm_test));
+% colormap((gray))
 colorbar
+title('Confusion matrix for in-situ data')
 figure(3)
 [~, cm_valid, ~, ~] = confusion(num2bin10(validClassSmall, length(classes)), num2bin10(hvalid, length(classes)));
-imagesc(normr(cm_valid));
-colormap((jet))
+imagesc(normc(cm_valid));
+% colormap((gray))
 colorbar
+title('Confusion matrix for generalization data')

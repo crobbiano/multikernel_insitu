@@ -1,4 +1,4 @@
-function [correct_class, scores] = multiClassClassifier(data, irNetwork)
+function [correct_class, guessed_class, scores] = multiClassClassifier(data, irNetwork)
 %*********************************************************************************************************************************
 % Given a data set and an content based kernel-machine, this script evaluates the ability of the machine to correctly classify the
 % samples.
@@ -36,3 +36,4 @@ retrieve_labels = full(ind2vec(idxs', numClasses))';
 % find which features are correctly classified
 gt_labels = full(ind2vec([data.gt], numClasses))';
 correct_class = all(retrieve_labels == gt_labels,2);
+[~,guessed_class] = max(retrieve_labels,[],2);

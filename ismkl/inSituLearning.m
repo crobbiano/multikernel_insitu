@@ -42,7 +42,8 @@ function [irNetwork, results] = inSituLearning(trainData, isData, genData, in_si
 % portions thereof marked with this legend must also reproduce the markings.
 %*********************************************************************************************************************************
 %% Instantiate Parameters Used to Track Performance
-batchSize = 25;
+batchSize = 50;
+% batchSize = length(isData);
 numBatches = floor(length(isData)/batchSize);
 % numBatches = floor(600/batchSize);
 % numBatches = 1000/batchSize;
@@ -60,9 +61,9 @@ testing_ignored = zeros(length(isData), 1);
 atoms_added = 0;
 
 %% Evaluate Identification Performance on Fresh Network
-[correct_class_train(:,1), scores_train] = multiClassClassifier(trainData, irNetwork);
-[correct_class_is(:,1), scores_test] = multiClassClassifier(isData, irNetwork);
-[correct_class_gen(:,1), scores_gen] = multiClassClassifier(genData, irNetwork);
+[correct_class_train(:,1), guessed_class_train, scores_train] = multiClassClassifier(trainData, irNetwork);
+[correct_class_is(:,1), guessed_class_is, scores_test] = multiClassClassifier(isData, irNetwork);
+[correct_class_gen(:,1), guessed_class_gen, scores_gen] = multiClassClassifier(genData, irNetwork);
 disp(['Pre-In-Situ Learning CC Rate (Train Data): ' num2str(mean(correct_class_train(:,1)))])
 disp(['Pre-In-Situ Learning CC Rate (IS Data): ' num2str(mean(correct_class_is(:,1)))])
 disp(['Pre-In-Situ Learning CC Rate (Generalization Data): ' num2str(mean(correct_class_gen(:,1)))])
@@ -106,9 +107,9 @@ for train_round = 1:numBatches
     
     % Evaluate Identification Performance
     if update_id > 0
-        [correct_class_train(:, train_round+1), ~] = multiClassClassifier(trainData, irNetwork); % evaluate testing data
-        [correct_class_is(:, train_round+1), ~] = multiClassClassifier(isData, irNetwork); % evaluate testing data
-        [correct_class_gen(:, train_round+1), ~] = multiClassClassifier(genData, irNetwork); % evaluate generalization data
+        [correct_class_train(:, train_round+1), guessed_class_train,  ~] = multiClassClassifier(trainData, irNetwork); % evaluate testing data
+        [correct_class_is(:, train_round+1), guessed_class_is, ~] = multiClassClassifier(isData, irNetwork); % evaluate testing data
+        [correct_class_gen(:, train_round+1), guessed_class_gen, ~] = multiClassClassifier(genData, irNetwork); % evaluate generalization data
         
         %         AUC_train(train_round + 1) = ROCgen(irNetwork, trainData, false);
         %         AUC_is(train_round + 1) = ROCgen(irNetwork, isData, false);
@@ -172,6 +173,9 @@ results.atoms_added = atoms_added;
 results.correct_class_train = correct_class_train;
 results.correct_class_is = correct_class_is;
 results.correct_class_gen = correct_class_gen;
+results.guess_class_train = guessed_class_train;
+results.guess_class_is = guessed_class_is;
+results.guess_class_gen = guessed_class_gen;
 disp(['Post-In-Situ Learning CC Rate (Train Data): ' num2str(mean(results.correct_class_train(:, end)))])
 disp(['Post-In-Situ Learning CC Rate (IS Data): ' num2str(mean(results.correct_class_is(:, end)))])
 disp(['Post-In-Situ Learning CC Rate (Generalization Data): ' num2str(mean(results.correct_class_gen(:, end)))])
