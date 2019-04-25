@@ -94,9 +94,10 @@ end
 % the difference between reconstruction error between classes is greater
 % than another threshold
 % poor_confidence_idxs = min(retrieve_score,[],2) > .97;
-% llr = log10(retrieve_score(:,1) ./ retrieve_score(:,2));
-% poor_differentiation_idxs = llr > -.0005 & llr < .0005;
-poor_differentiation_idxs = max(abs(retrieve_score - min(retrieve_score,[],2)),[],2) < max(max(abs(retrieve_score - min(retrieve_score,[],2)),[],2))/3;
+llr = log10(max(retrieve_score,[],2) ./ min(retrieve_score,[],2));
+% poor_differentiation_idxs = abs(llr) < .02;
+poor_differentiation_idxs = abs(llr) < .5;
+% poor_differentiation_idxs = max(abs(retrieve_score - min(retrieve_score,[],2)),[],2) < max(max(abs(retrieve_score - min(retrieve_score,[],2)),[],2))/2;
 % llr = abs(retrieve_score(:,1) - retrieve_score(:,2));
 % poor_differentiation_idxs = llr < .2;
 

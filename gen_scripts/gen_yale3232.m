@@ -59,10 +59,10 @@ trainSet=Y_light(:,trainIdx_light);
 trainClassSmall=classes_light(trainIdx_light);
 trainSetSmall=Y_light(:,trainIdx_light);
 
-% classes_nontrain = classes_dark;
-% Y_nontrain = Y_dark;
-classes_nontrain = classes_medium;
-Y_nontrain = Y_medium;
+classes_nontrain = classes_dark;
+Y_nontrain = Y_dark;
+% classes_nontrain = classes_medium;
+% Y_nontrain = Y_medium;
 testIdx = randsample(length(classes_nontrain), floor(length(classes_nontrain)/2));
 testIdx = sort(testIdx);
 testClass=classes_nontrain(testIdx);
@@ -74,8 +74,8 @@ validIdx_light = setdiff(1:length(classes_light),trainIdx_light);
 validIdx = setdiff(1:length(classes_nontrain),testIdx);
 validClass=[classes_light(validIdx_light) classes_nontrain(validIdx)];
 validSet=[Y_light(:,validIdx_light) Y_nontrain(:,validIdx)];
-validClassSmall=[classes_light(validIdx_light) classes_nontrain(validIdx)];
-validSetSmall=[Y_light(:,validIdx_light) Y_nontrain(:,validIdx)];
+validClassSmall=[classes_light(validIdx_light) classes_nontrain(validIdx) classes_medium];
+validSetSmall=[Y_light(:,validIdx_light) Y_nontrain(:,validIdx) Y_medium];
 [~, idx] = sort(validClass);
 validClass = validClass(idx);
 validSet = validSet(:,idx);
@@ -84,7 +84,7 @@ validClassSmall = validClassSmall(idx);
 validSetSmall = validSetSmall(:,idx);
 
 %%
-save('yale.mat', 'dictClass', 'dictClassSmall', 'dictSet', ...
+save('yale_darkIS_darkMediumGen.mat', 'dictClass', 'dictClassSmall', 'dictSet', ...
     'dictSetSmall', 'trainSet', 'trainClass', 'testSet', 'testClass',...
     'trainSetSmall', 'trainClassSmall', 'testSetSmall', 'testClassSmall',...
     'validSet', 'validClass', 'validSetSmall', 'validClassSmall')

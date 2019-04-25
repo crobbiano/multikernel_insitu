@@ -1,4 +1,4 @@
-function [irNetwork, update_id] = learnBatch(irNetwork, data, SS_THRESH, ResidNorm)
+function [irNetwork, update_id, numAdded] = learnBatch(irNetwork, data, SS_THRESH, ResidNorm)
 %*********************************************************************************************************************************
 % Adapts an IR in-situ learning network to a single pattern (contact).
 
@@ -42,12 +42,26 @@ numClasses = size(irNetwork.Labels,2);
 [~, class_ind] = max(scores,[],2); % Find class with highest score
 class_label = full(ind2vec(class_ind', numClasses))';
 gt_label = full(ind2vec([data.gt], numClasses))';
+numAdded = 0;
 
 %% Possibly Update Classifier
 if all(all(class_label == gt_label,2)) % if correctly labeled with high confidence
     % Report results of update
     update_id = 0;    
-else % try updating weights and checking increase in sparsity
+else % try updating weights and checking increase in sparsity        
+    % find samples which we didnt get correct
+    sorted = sort(scores,2);
+    sortedDiff = sorted(:,end) - sorted(:,end-1);
+    guessedWrong = sortedDiff <= 1;
+%     [guessedScores,guessedLabels] = max(scores,[],2);
+%     guessedWrong = guessedLabels ~= [data.gt]';
+%     guessedWrong = guessedScores <= .7;
+        
+    datafeatures = [data.features];
+    datafeatures = datafeatures(:,guessedWrong);
+    gt_label_small = gt_label(guessedWrong,:);
+    L_small = [irNetwork.Labels;gt_label_small];
+    
     % Compute kernel matrix for input feature vector and add
     K10 = KernelMatrix([data.features],[irNetwork.Features],irNetwork.Params,irNetwork.Kernels);
     Kmat = [irNetwork.KernMat;K10];
@@ -63,31 +77,38 @@ else % try updating weights and checking increase in sparsity
     
     if DelNumCoefficients < SS_THRESH % if number of coefficients added small, update classifier
         % Update classifier
-        irNetwork.TrainData = [irNetwork.TrainData,data.features];
+        irNetwork.TrainData = [irNetwork.TrainData,[data.features]];
         irNetwork.KernMat = Kmat;
         irNetwork.WeightMat = W;
         irNetwork.Labels = L;
         
         % Report results of update
         update_id = 1;
-    else % add kernel centers
+    else % add kernel centers - FIXME only add the ones we didn't get correct
+        
         % Compute new kernel matrix for input feature vector
+%         K10 = KernelMatrix(datafeatures,[irNetwork.Features],irNetwork.Params,irNetwork.Kernels);
         K01 = KernelMatrix([irNetwork.TrainData],[data.features],irNetwork.Params,irNetwork.Kernels);
         K11 = KernelMatrix([data.features],[data.features],irNetwork.Params,irNetwork.Kernels);
         Kmat = [irNetwork.KernMat,K01;K10,K11];
         
         % Compute new weight matrix
+%         W = RecursiveOMP(Kmat,irNetwork.WeightMat,L_small,ResidNorm);
         W = RecursiveOMP(Kmat,irNetwork.WeightMat,L,ResidNorm);
         
         % Update classifier
-        irNetwork.Features = [irNetwork.Features,data.features];
-        irNetwork.TrainData = [irNetwork.TrainData,data.features];
+%         irNetwork.Features = [irNetwork.Features,datafeatures];
+%         irNetwork.TrainData = [irNetwork.TrainData,datafeatures];
+        irNetwork.Features = [irNetwork.Features,[data.features]];
+        irNetwork.TrainData = [irNetwork.TrainData,[data.features]];
         irNetwork.KernMat = Kmat;
         irNetwork.WeightMat = W;
+%         irNetwork.Labels = L_small;
         irNetwork.Labels = L;
         
         % Report results of update
         update_id = 2;
+        numAdded = size(datafeatures,2);
     end
     
 end

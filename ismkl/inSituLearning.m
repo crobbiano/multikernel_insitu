@@ -42,7 +42,7 @@ function [irNetwork, results] = inSituLearning(trainData, isData, genData, in_si
 % portions thereof marked with this legend must also reproduce the markings.
 %*********************************************************************************************************************************
 %% Instantiate Parameters Used to Track Performance
-batchSize = 50;
+batchSize = 5;
 % batchSize = length(isData);
 numBatches = floor(length(isData)/batchSize);
 % numBatches = floor(600/batchSize);
@@ -103,7 +103,7 @@ for train_round = 1:numBatches
     
     % Potentially Adapt Network to Sample
     %     [irNetwork,update_id] = learnContact(irNetwork,currData,SS_THRESH,ResidNorm);
-    [irNetwork,update_id] = learnBatch(irNetwork,currData,SS_THRESH,ResidNorm);
+    [irNetwork,update_id, numAdded] = learnBatch(irNetwork,currData,SS_THRESH,ResidNorm);
     
     % Evaluate Identification Performance
     if update_id > 0
@@ -119,7 +119,7 @@ for train_round = 1:numBatches
         center_size(train_round+1,:) = [nnz(irNetwork.WeightMat(:,1)) nnz(irNetwork.WeightMat(:,2))];
         
         if update_id == 2
-            atoms_added = atoms_added + batchSize;
+            atoms_added = atoms_added + numAdded;
             %             display('Adding atoms');
         end
     else
