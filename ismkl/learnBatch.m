@@ -52,7 +52,7 @@ else % try updating weights and checking increase in sparsity
     % find samples which we didnt get correct
     sorted = sort(scores,2);
     sortedDiff = sorted(:,end) - sorted(:,end-1);
-    guessedWrong = sortedDiff <= 1;
+    guessedWrong = sortedDiff <= .2;
 %     [guessedScores,guessedLabels] = max(scores,[],2);
 %     guessedWrong = guessedLabels ~= [data.gt]';
 %     guessedWrong = guessedScores <= .7;
@@ -87,24 +87,26 @@ else % try updating weights and checking increase in sparsity
     else % add kernel centers - FIXME only add the ones we didn't get correct
         
         % Compute new kernel matrix for input feature vector
-%         K10 = KernelMatrix(datafeatures,[irNetwork.Features],irNetwork.Params,irNetwork.Kernels);
-        K01 = KernelMatrix([irNetwork.TrainData],[data.features],irNetwork.Params,irNetwork.Kernels);
-        K11 = KernelMatrix([data.features],[data.features],irNetwork.Params,irNetwork.Kernels);
+        K10 = KernelMatrix(datafeatures,[irNetwork.Features],irNetwork.Params,irNetwork.Kernels);
+        K01 = KernelMatrix([irNetwork.TrainData],datafeatures,irNetwork.Params,irNetwork.Kernels);
+        K11 = KernelMatrix(datafeatures,datafeatures,irNetwork.Params,irNetwork.Kernels);
+%         K01 = KernelMatrix([irNetwork.TrainData],[data.features],irNetwork.Params,irNetwork.Kernels);
+%         K11 = KernelMatrix([data.features],[data.features],irNetwork.Params,irNetwork.Kernels);
         Kmat = [irNetwork.KernMat,K01;K10,K11];
         
         % Compute new weight matrix
-%         W = RecursiveOMP(Kmat,irNetwork.WeightMat,L_small,ResidNorm);
-        W = RecursiveOMP(Kmat,irNetwork.WeightMat,L,ResidNorm);
+        W = RecursiveOMP(Kmat,irNetwork.WeightMat,L_small,ResidNorm);
+%         W = RecursiveOMP(Kmat,irNetwork.WeightMat,L,ResidNorm);
         
         % Update classifier
-%         irNetwork.Features = [irNetwork.Features,datafeatures];
-%         irNetwork.TrainData = [irNetwork.TrainData,datafeatures];
-        irNetwork.Features = [irNetwork.Features,[data.features]];
-        irNetwork.TrainData = [irNetwork.TrainData,[data.features]];
+        irNetwork.Features = [irNetwork.Features,datafeatures];
+        irNetwork.TrainData = [irNetwork.TrainData,datafeatures];
+%         irNetwork.Features = [irNetwork.Features,[data.features]];
+%         irNetwork.TrainData = [irNetwork.TrainData,[data.features]];
         irNetwork.KernMat = Kmat;
         irNetwork.WeightMat = W;
-%         irNetwork.Labels = L_small;
-        irNetwork.Labels = L;
+        irNetwork.Labels = L_small;
+%         irNetwork.Labels = L;
         
         % Report results of update
         update_id = 2;

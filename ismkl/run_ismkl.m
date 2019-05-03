@@ -18,8 +18,8 @@ for runNum = 1:25
     %     allDataPath = '../gen_scripts/davis_base_boss_is.mat';
     %     allDataPath = '../gen_scripts/boss_base_davis_is.mat';
     
-    ResidNorm = .3;
-    SS_THRESH = 13;
+    ResidNorm = .2;
+    SS_THRESH = 60;
     CLASS_THRESH = 0.25;
     
     shift = 0;
@@ -58,7 +58,7 @@ for runNum = 1:25
     if saveIS
         save(isNetworkFile, 'isNetwork');
     end
-    save(['results/results_batch' num2str(results.batchSize) '_run' num2str(runNum) 'multi_5batch.mat'], 'results', '-v7.3');
+    save(['results/results_batch' num2str(results.batchSize) '_run' num2str(runNum) 'multi_mod.mat'], 'results', '-v7.3');
     
     %% Plot some things
     

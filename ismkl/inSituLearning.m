@@ -42,7 +42,7 @@ function [irNetwork, results] = inSituLearning(trainData, isData, genData, in_si
 % portions thereof marked with this legend must also reproduce the markings.
 %*********************************************************************************************************************************
 %% Instantiate Parameters Used to Track Performance
-batchSize = 5;
+batchSize = 50;
 % batchSize = length(isData);
 numBatches = floor(length(isData)/batchSize);
 % numBatches = floor(600/batchSize);

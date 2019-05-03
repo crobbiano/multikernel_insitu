@@ -29,7 +29,7 @@ function [irNetwork] = trnMultikernel(labels, features)
 %% Set Parameters 
 ResidNorm = 0.1; % norm of residual used in OMP
  % kernel parameters used by the classifier, allow for multi params
-GaussParams = [linspace(.01,3,10);zeros(1,10)];
+GaussParams = [.5*linspace(.01,3,10);zeros(1,10)];
 PolyParams = [.5 .5 .5 .5 1 1 1 1; 1 2 3 4 1 2 3 4];
 % PolyParams = [];
 Params = [GaussParams, PolyParams];
